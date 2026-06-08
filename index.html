@@ -390,19 +390,198 @@
             box-shadow: 0 8px 18px rgba(15, 23, 42, 0.15) !important;
         }
 
+        @media (max-width: 1024px) {
+            .map-brand {
+                left: 58px;
+                max-width: calc(100% - 82px);
+            }
+
+            .local-search {
+                left: 58px;
+                width: min(340px, calc(100% - 82px));
+            }
+
+            .local-search__summary p {
+                line-height: 1.45;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .map-brand {
+                top: 14px;
+                left: 58px;
+                right: 12px;
+                max-width: none;
+                padding: 10px 12px;
+            }
+
+            .map-brand h1 {
+                font-size: 14px;
+            }
+
+            .map-brand p {
+                font-size: 11px;
+            }
+
+            .local-search {
+                top: auto;
+                left: 12px;
+                right: 12px;
+                bottom: 14px;
+                width: auto;
+                border-radius: 10px;
+                max-height: min(54vh, 430px);
+                display: flex;
+                flex-direction: column;
+            }
+
+            .local-search__row {
+                padding: 11px 12px;
+            }
+
+            .local-search__actions {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                padding: 8px 10px;
+            }
+
+            .local-search__actions button {
+                width: 100%;
+                min-width: 0;
+                padding: 0 8px;
+            }
+
+            .local-search__summary {
+                padding: 10px 12px;
+            }
+
+            .local-search__summary p {
+                display: -webkit-box;
+                overflow: hidden;
+                -webkit-line-clamp: 3;
+                -webkit-box-orient: vertical;
+            }
+
+            .local-search__results {
+                max-height: none;
+                overflow: auto;
+                flex: 1;
+                padding: 8px;
+            }
+
+            .search-result {
+                min-height: 62px;
+                padding: 10px;
+            }
+
+            .leaflet-control-container .leaflet-left {
+                left: 8px;
+            }
+
+            .leaflet-control-container .leaflet-top {
+                top: 8px;
+            }
+
+            .leaflet-popup-content {
+                width: min(78vw, 320px) !important;
+                margin: 14px;
+            }
+        }
+
         @media (max-width: 640px) {
             .map-brand {
                 left: 12px;
                 right: 12px;
-                top: 70px;
+                top: 58px;
                 max-width: none;
             }
 
             .local-search {
                 left: 12px;
                 right: 12px;
-                top: 138px;
+                bottom: 12px;
                 width: auto;
+            }
+
+            .css_supermarketsebaran_supermarket_1 {
+                display: none;
+            }
+
+            .supermarket-popup {
+                min-width: 0;
+                max-width: 100%;
+            }
+
+            .supermarket-popup h2 {
+                font-size: 15px;
+            }
+
+            .supermarket-popup__grid {
+                grid-template-columns: 1fr;
+            }
+
+            .supermarket-popup__actions {
+                flex-direction: column;
+            }
+
+            .supermarket-popup__actions a {
+                width: 100%;
+                box-sizing: border-box;
+            }
+        }
+
+        @media (max-width: 420px) {
+            .map-brand {
+                padding: 9px 10px;
+            }
+
+            .map-brand h1 {
+                font-size: 13px;
+            }
+
+            .map-brand p,
+            .local-search__summary p,
+            .search-result span {
+                font-size: 11px;
+            }
+
+            .local-search input {
+                font-size: 13px;
+            }
+
+            .local-search__summary {
+                display: none;
+            }
+
+            .local-search {
+                max-height: 44vh;
+            }
+
+            .supermarket-pin {
+                width: 28px;
+                height: 28px;
+            }
+
+            .supermarket-pin .fa,
+            .supermarket-pin .fas,
+            .supermarket-pin [class*="fa-"] {
+                font-size: 12px;
+            }
+        }
+
+        @media (max-height: 640px) {
+            .local-search {
+                max-height: 46vh;
+            }
+
+            .local-search__summary {
+                display: none;
+            }
+        }
+
+        @media (min-width: 1100px) {
+            .local-search__results {
+                max-height: 340px;
             }
         }
         </style>
@@ -1469,6 +1648,9 @@
             searchInput.value = '';
             renderSearchResults('');
             searchInput.focus();
+        });
+        window.addEventListener('resize', function() {
+            map.invalidateSize({ pan: false });
         });
         map.fitBounds(layer_supermarketsebaran_supermarket_1.getBounds(), { padding: [36, 36] });
         resetLabels([layer_supermarketsebaran_supermarket_1]);
