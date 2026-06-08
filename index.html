@@ -1,0 +1,1486 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="initial-scale=1,user-scalable=no,maximum-scale=1,width=device-width">
+        <meta name="mobile-web-app-capable" content="yes">
+        <meta name="apple-mobile-web-app-capable" content="yes">
+        <link rel="stylesheet" href="css/leaflet.css">
+        <!-- <link rel="stylesheet" href="css/L.Control.Layers.Tree.css"> -->
+        <link rel="stylesheet" href="css/L.Control.Locate.min.css">
+        <link rel="stylesheet" href="css/qgis2web.css">
+        <link rel="stylesheet" href="css/fontawesome-all.min.css">
+        <link rel="stylesheet" href="css/leaflet-measure.css">
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+        <style>
+        html, body, #map {
+            width: 100%;
+            height: 100%;
+            padding: 0;
+            margin: 0;
+            font-family: "Plus Jakarta Sans", "Segoe UI", Arial, sans-serif;
+            color: #1d2939;
+            font-feature-settings: "liga" 1, "kern" 1;
+            text-rendering: geometricPrecision;
+        }
+
+        .leaflet-container {
+            background: #eef3f7;
+        }
+
+        .map-brand {
+            position: absolute;
+            top: 18px;
+            left: 64px;
+            z-index: 800;
+            max-width: calc(100% - 96px);
+            padding: 12px 16px;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.94);
+            box-shadow: 0 12px 28px rgba(15, 23, 42, 0.16);
+            border: 1px solid rgba(148, 163, 184, 0.28);
+            backdrop-filter: blur(8px);
+        }
+
+        .map-brand h1 {
+            margin: 0;
+            font-size: 16px;
+            line-height: 1.25;
+            font-weight: 800;
+            letter-spacing: 0;
+        }
+
+        .map-brand p {
+            margin: 4px 0 0;
+            font-size: 12px;
+            color: #64748b;
+        }
+
+        .local-search {
+            position: absolute;
+            top: 92px;
+            left: 64px;
+            z-index: 801;
+            width: min(360px, calc(100% - 96px));
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.96);
+            box-shadow: 0 14px 32px rgba(15, 23, 42, 0.18);
+            border: 1px solid rgba(148, 163, 184, 0.3);
+            overflow: hidden;
+        }
+
+        .local-search__row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 12px;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .local-search__row .fa {
+            color: #0f766e;
+        }
+
+        .local-search input {
+            width: 100%;
+            border: 0;
+            outline: 0;
+            font-size: 14px;
+            line-height: 22px;
+            font-family: inherit;
+            font-weight: 500;
+            color: #0f172a;
+            background: transparent;
+        }
+
+        .local-search__summary {
+            padding: 12px;
+            border-bottom: 1px solid #e2e8f0;
+            background: #f8fafc;
+        }
+
+        .local-search__summary strong {
+            display: block;
+            margin-bottom: 4px;
+            font-size: 12px;
+            color: #0f172a;
+        }
+
+        .local-search__summary p {
+            margin: 0;
+            font-size: 12px;
+            line-height: 1.5;
+            color: #64748b;
+        }
+
+        .local-search__actions {
+            display: flex;
+            gap: 8px;
+            padding: 10px 12px;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .local-search__actions button {
+            height: 32px;
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
+            background: #fff;
+            color: #334155;
+            font-size: 12px;
+            font-family: inherit;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .local-search__actions button:hover {
+            background: #f8fafc;
+        }
+
+        .local-search__results {
+            max-height: 288px;
+            overflow: auto;
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 8px;
+            padding: 10px;
+            background: #f8fafc;
+        }
+
+        .search-result {
+            display: block;
+            width: 100%;
+            min-height: 68px;
+            padding: 11px 12px;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            background: #fff;
+            font-family: inherit;
+            text-align: left;
+            cursor: pointer;
+            box-shadow: 0 2px 6px rgba(15, 23, 42, 0.04);
+            transition: border-color 160ms ease, box-shadow 160ms ease, transform 160ms ease;
+        }
+
+        .search-result:hover,
+        .search-result.is-active {
+            background: #ecfdf5;
+            border-color: #99f6e4;
+            box-shadow: 0 8px 16px rgba(15, 118, 110, 0.12);
+            transform: translateY(-1px);
+        }
+
+        .search-result strong {
+            display: block;
+            font-size: 13px;
+            color: #0f172a;
+        }
+
+        .search-result span {
+            display: block;
+            margin-top: 2px;
+            font-size: 12px;
+            color: #64748b;
+        }
+
+        .search-result small {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            margin-top: 8px;
+            color: #0f766e;
+            font-size: 11px;
+            font-weight: 700;
+        }
+
+        .search-empty {
+            padding: 14px 12px;
+            font-size: 13px;
+            color: #64748b;
+        }
+
+        .supermarket-popup {
+            min-width: 260px;
+            max-width: 320px;
+        }
+
+        .supermarket-popup h2 {
+            margin: 0 0 6px;
+            font-size: 16px;
+            line-height: 1.25;
+            color: #0f172a;
+        }
+
+        .supermarket-popup__badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            margin-bottom: 10px;
+            padding: 4px 8px;
+            border-radius: 999px;
+            background: #ecfdf5;
+            color: #0f766e;
+            font-size: 11px;
+            font-weight: 700;
+        }
+
+        .supermarket-popup p {
+            margin: 0;
+            font-size: 13px;
+            line-height: 1.45;
+            color: #475569;
+        }
+
+        .supermarket-popup__description {
+            margin-top: 10px !important;
+            padding-top: 10px;
+            border-top: 1px solid #e2e8f0;
+        }
+
+        .supermarket-popup__grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            margin-top: 12px;
+        }
+
+        .supermarket-popup__meta {
+            padding: 8px;
+            border-radius: 7px;
+            background: #f8fafc;
+        }
+
+        .supermarket-popup__meta span {
+            display: block;
+            margin-bottom: 3px;
+            font-size: 10px;
+            font-weight: 700;
+            color: #64748b;
+            text-transform: uppercase;
+        }
+
+        .supermarket-popup__meta strong {
+            display: block;
+            font-size: 12px;
+            line-height: 1.35;
+            color: #0f172a;
+        }
+
+        .supermarket-popup__actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 12px;
+            color: white !important;
+        }
+
+        .supermarket-popup__actions a {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            min-height: 32px;
+            padding: 0 10px;
+            border-radius: 7px;
+            background: #0f766e;
+            color: #fff !important;
+            font-size: 12px;
+            font-weight: 700;
+            text-decoration: none;
+        }
+
+        .supermarket-popup__actions a:not(.secondary) .fa,
+        .supermarket-popup__actions a:not(.secondary) .fas {
+            color: #fff !important;
+            -webkit-text-fill-color: #fff;
+        }
+
+        .supermarket-popup__actions a.secondary {
+            background: #f1f5f9;
+            color: #334155;
+        }
+
+        .supermarket-popup .coords {
+            margin-top: 10px;
+            padding-top: 8px;
+            border-top: 1px solid #e2e8f0;
+            color: #64748b;
+            font-size: 12px;
+        }
+
+        .supermarket-popup__source {
+            margin-top: 8px;
+            font-size: 11px;
+            line-height: 1.4;
+            color: #94a3b8;
+        }
+
+        .supermarket-pin {
+            position: relative;
+            width: 30px;
+            height: 30px;
+            border-radius: 50% 50% 50% 0;
+            background: #0f766e;
+            border: 2px solid #fff;
+            box-shadow: 0 8px 16px rgba(15, 23, 42, 0.28);
+            transform: rotate(-45deg);
+            transform-origin: 50% 50%;
+            transition: transform 160ms ease, background 160ms ease, box-shadow 160ms ease;
+        }
+
+        .leaflet-marker-icon.supermarket-marker {
+            background: transparent;
+            border: 0;
+        }
+
+        .supermarket-pin::after {
+            content: "";
+            position: absolute;
+            right: -4px;
+            bottom: -4px;
+            width: 9px;
+            height: 9px;
+            border-radius: 999px;
+            background: rgba(15, 118, 110, 0.2);
+            filter: blur(1px);
+        }
+
+        .supermarket-pin .fa,
+        .supermarket-pin .fas,
+        .supermarket-pin [class*="fa-"] {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #fff !important;
+            -webkit-text-fill-color: #fff;
+            font-size: 13px;
+            line-height: 1;
+            text-shadow: none;
+            transform: rotate(45deg);
+        }
+
+        .supermarket-marker.is-selected .supermarket-pin,
+        .supermarket-marker:hover .supermarket-pin {
+            background: #f97316;
+            box-shadow: 0 12px 22px rgba(249, 115, 22, 0.28);
+            transform: rotate(-45deg) scale(1.16);
+        }
+
+        .css_supermarketsebaran_supermarket_1 {
+            border: 0;
+            border-radius: 4px;
+            box-shadow: 0 4px 10px rgba(15, 23, 42, 0.16);
+            background: rgba(255, 255, 255, 0.92);
+            color: #1e293b;
+            font-size: 11px;
+            font-weight: 600;
+            padding: 3px 6px;
+        }
+
+        .leaflet-popup-content-wrapper {
+            border-radius: 8px;
+        }
+
+        .leaflet-control-zoom,
+        .leaflet-control-locate,
+        .leaflet-control-measure {
+            box-shadow: 0 8px 18px rgba(15, 23, 42, 0.15) !important;
+        }
+
+        @media (max-width: 640px) {
+            .map-brand {
+                left: 12px;
+                right: 12px;
+                top: 70px;
+                max-width: none;
+            }
+
+            .local-search {
+                left: 12px;
+                right: 12px;
+                top: 138px;
+                width: auto;
+            }
+        }
+        </style>
+        <title>Peta Sebaran Supermarket Pekanbaru</title>
+    </head>
+    <body>
+        <div id="map">
+        </div>
+        <section class="map-brand" aria-label="Judul peta">
+            <h1>Peta Sebaran Supermarket Pekanbaru</h1>
+            <p>39 titik lokasi supermarket dan swalayan</p>
+        </section>
+        <section class="local-search" aria-label="Cari supermarket">
+            <div class="local-search__row">
+                <span class="fa fa-search" aria-hidden="true"></span>
+                <input id="supermarketSearch" type="search" placeholder="Cari nama atau alamat supermarket..." autocomplete="off">
+            </div>
+            <div class="local-search__actions">
+                <button id="showAllPoints" type="button">Tampilkan semua titik</button>
+                <button id="clearSearch" type="button">Bersihkan</button>
+            </div>
+            <div class="local-search__summary">
+                <strong>Tentang supermarket</strong>
+                <p>Supermarket adalah toko ritel swalayan yang menyediakan bahan makanan, produk segar, dan kebutuhan rumah tangga. Peta ini membantu melihat konsentrasi serta persebaran akses belanja modern di Kota Pekanbaru.</p>
+            </div>
+            <div id="searchResults" class="local-search__results"></div>
+        </section>
+        <script src="js/qgis2web_expressions.js"></script>
+        <script src="js/leaflet.js"></script>
+        <!-- <script src="js/L.Control.Layers.Tree.min.js"></script> -->
+        <script src="js/L.Control.Locate.min.js"></script>
+        <script src="js/leaflet.rotatedMarker.js"></script>
+        <script src="js/leaflet.pattern.js"></script>
+        <script src="js/leaflet-hash.js"></script>
+        <script src="js/Autolinker.min.js"></script>
+        <script src="js/rbush.min.js"></script>
+        <script src="js/labelgun.min.js"></script>
+        <script src="js/labels.js"></script>
+        <script src="js/leaflet-measure.js"></script>
+        <script src="data/supermarketsebaran_supermarket_1.js"></script>
+        <script>
+        var highlightLayer;
+        function highlightFeature(e) {
+            highlightLayer = e.target;
+
+            if (e.target.feature.geometry.type === 'LineString' || e.target.feature.geometry.type === 'MultiLineString') {
+              highlightLayer.setStyle({
+                color: 'rgba(255, 255, 0, 1.00)',
+              });
+            } else {
+              focusMarker(highlightLayer);
+            }
+        }
+        var map = L.map('map', {
+            zoomControl:false, maxZoom:28, minZoom:1
+        }).fitBounds([[0.42464808168576923,101.31988751030923],[0.5632010842813402,101.56120843926868]]);
+        var hash = new L.Hash(map);
+        map.attributionControl.setPrefix('<a href="https://github.com/qgis2web/qgis2web" target="_blank">qgis2web</a> &middot; <a href="https://leafletjs.com" title="A JS library for interactive maps">Leaflet</a> &middot; <a href="https://qgis.org">QGIS</a>');
+        var autolinker = new Autolinker({truncate: {length: 30, location: 'smart'}});
+        function escapeHtml(value) {
+            return String(value == null ? '' : value)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+        }
+
+        function getSupermarketName(feature) {
+            return feature.properties && feature.properties['Nama'] ? feature.properties['Nama'] : 'Tanpa nama';
+        }
+
+        function getSupermarketAddress(feature) {
+            return feature.properties && feature.properties['Alamat'] ? feature.properties['Alamat'] : 'Alamat tidak tersedia';
+        }
+
+        function getSupermarketInfo(feature) {
+            var name = getSupermarketName(feature).toLowerCase();
+            var baseInfo = {
+                category: 'Swalayan lokal',
+                service: 'Belanja harian',
+                description: 'Titik ini merepresentasikan lokasi supermarket atau swalayan yang melayani kebutuhan belanja harian masyarakat sekitar, seperti bahan makanan, produk rumah tangga, dan kebutuhan pokok.',
+                sourceLabel: 'Data titik lokal',
+                sourceUrl: ''
+            };
+
+            if (name.indexOf('new planet') !== -1) {
+                return {
+                    category: 'Grocery store dan department store',
+                    service: 'Belanja harian, makanan, dan kebutuhan rumah tangga',
+                    description: 'New Planet Swalayan Garuda Sakti tercatat sebagai lokasi belanja di area Simpang Baru, Tampan, Pekanbaru. Sumber direktori publik mengelompokkannya dalam aktivitas grocery store, department store, dan shopping.',
+                    sourceLabel: 'Cybo',
+                    sourceUrl: 'https://www.cybo.com/ID-biz/new-planet-swalayan-garuda-sakti'
+                };
+            }
+
+            if (name.indexOf('lotte') !== -1) {
+                return {
+                    category: 'Supermarket grosir',
+                    service: 'Grosir, makanan, kebutuhan rumah, dan produk non-food',
+                    description: 'Lotte Grosir Pekanbaru dikenal sebagai gerai ritel grosir di Jl. Soekarno-Hatta. Direktori alamat publik mencatat gerai ini menyediakan kebutuhan makanan, barang rumah tangga, elektronik, pakaian, mainan, dan promo belanja.',
+                    sourceLabel: 'iAlamat',
+                    sourceUrl: 'https://idalamat.com/alamat/760770/lotte-grosir-pekanbaru-pekanbaru-riau'
+                };
+            }
+
+            if (name.indexOf('transmart') !== -1) {
+                return {
+                    category: 'Supermarket dan pusat ritel',
+                    service: 'Belanja harian, tenant ritel, restoran, dan hiburan',
+                    description: 'Transmart Pekanbaru berada dalam kompleks ritel yang lebih besar. Sumber web publik menggambarkannya sebagai area belanja modern dengan supermarket, tenant restoran, dan pilihan hiburan.',
+                    sourceLabel: 'Occupi / Wanderlog',
+                    sourceUrl: 'https://getoccupi.com/malls/transmart-mall-pekanbaru'
+                };
+            }
+
+            if (name.indexOf('hypermart') !== -1) {
+                return {
+                    category: 'Hypermarket',
+                    service: 'Belanja kebutuhan harian skala besar',
+                    description: 'Hypermart merupakan format ritel modern yang umumnya menyediakan pilihan produk harian, groceries, fresh food, dan kebutuhan rumah tangga dalam gerai berukuran besar.',
+                    sourceLabel: 'MPPA Retail Group',
+                    sourceUrl: 'https://www.mppa.co.id/'
+                };
+            }
+
+            if (name.indexOf('planet swalayan') !== -1 || name.indexOf('planet midi') !== -1) {
+                return {
+                    category: 'Swalayan lokal',
+                    service: 'Belanja kebutuhan pokok dan rumah tangga',
+                    description: 'Planet Swalayan adalah jaringan/titik swalayan lokal pada data ini. Lokasinya tersebar di beberapa ruas seperti Garuda Sakti, Cipta Karya, Kualu, dan Inpres sehingga berguna untuk membaca pola akses belanja harian.',
+                    sourceLabel: 'Data titik lokal',
+                    sourceUrl: ''
+                };
+            }
+
+            return baseInfo;
+        }
+
+        function buildGoogleMapsUrl(feature) {
+            var lat = feature.properties['Latitude'];
+            var lng = feature.properties['Longitude'];
+            return 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(lat + ',' + lng);
+        }
+
+        function createSupermarketIcon() {
+            return L.divIcon({
+                className: 'supermarket-marker',
+                html: '<div class="supermarket-pin"><span class="fas fa-shopping-cart" aria-hidden="true"></span></div>',
+                iconSize: [34, 42],
+                iconAnchor: [17, 38],
+                popupAnchor: [0, -34],
+                tooltipAnchor: [0, -30]
+            });
+        }
+
+        function focusMarker(layer) {
+            if (layer._icon) {
+                L.DomUtil.addClass(layer._icon, 'is-selected');
+            }
+            layer.bringToFront();
+        }
+
+        function resetMarker(layer) {
+            if (layer._icon) {
+                L.DomUtil.removeClass(layer._icon, 'is-selected');
+            }
+        }
+        // remove popup's row if "visible-with-data"
+        function removeEmptyRowsFromPopupContent(content, feature) {
+         var tempDiv = document.createElement('div');
+         tempDiv.innerHTML = content;
+         var rows = tempDiv.querySelectorAll('tr');
+         for (var i = 0; i < rows.length; i++) {
+             var td = rows[i].querySelector('td.visible-with-data');
+             var key = td ? td.id : '';
+             if (td && td.classList.contains('visible-with-data') && feature.properties[key] == null) {
+                 rows[i].parentNode.removeChild(rows[i]);
+             }
+         }
+         return tempDiv.innerHTML;
+        }
+        // modify popup if contains media
+        function addClassToPopupIfMedia(content, popup) {
+            var tempDiv = document.createElement('div');
+            tempDiv.innerHTML = content;
+            var imgTd = tempDiv.querySelector('td img');
+            if (imgTd) {
+                var src = imgTd.getAttribute('src');
+                if (/\.(jpg|jpeg|png|gif|bmp|webp|avif)$/i.test(src)) {
+                    popup._contentNode.classList.add('media');
+                    setTimeout(function() {
+                        popup.update();
+                    }, 10);
+                } else if (/\.(mp3|wav|ogg|aac)$/i.test(src)) {
+                    var audio = document.createElement('audio');
+                    audio.controls = true;
+                    audio.src = src;
+                    imgTd.parentNode.replaceChild(audio, imgTd);
+                    popup._contentNode.classList.add('media');
+                    setTimeout(function() {
+                        popup.setContent(tempDiv.innerHTML);
+                        popup.update();
+                    }, 10);
+                } else if (/\.(mp4|webm|ogg|mov)$/i.test(src)) {
+                    var video = document.createElement('video');
+                    video.controls = true;
+                    video.src = src;
+                    video.style.width = "400px";
+                    video.style.height = "300px";
+                    video.style.maxHeight = "60vh";
+                    video.style.maxWidth = "60vw";
+                    imgTd.parentNode.replaceChild(video, imgTd);
+                    popup._contentNode.classList.add('media');
+                    // Aggiorna il popup quando il video carica i metadati
+                    video.addEventListener('loadedmetadata', function() {
+                        popup.update();
+                    });
+                    setTimeout(function() {
+                        popup.setContent(tempDiv.innerHTML);
+                        popup.update();
+                    }, 10);
+                } else {
+                    popup._contentNode.classList.remove('media');
+                }
+            } else {
+                popup._contentNode.classList.remove('media');
+            }
+        }
+        var zoomControl = L.control.zoom({
+            position: 'topleft'
+        }).addTo(map);
+        L.control.locate({locateOptions: {maxZoom: 19}}).addTo(map);
+        var measureControl = new L.Control.Measure({
+            position: 'topleft',
+            primaryLengthUnit: 'meters',
+            secondaryLengthUnit: 'kilometers',
+            primaryAreaUnit: 'sqmeters',
+            secondaryAreaUnit: 'hectares'
+        });
+        measureControl.addTo(map);
+        document.getElementsByClassName('leaflet-control-measure-toggle')[0].innerHTML = '';
+        document.getElementsByClassName('leaflet-control-measure-toggle')[0].className += ' fas fa-ruler';
+        var bounds_group = new L.featureGroup([]);
+        function setBounds() {
+        }
+        map.createPane('pane_OpenStreetMap_0');
+        map.getPane('pane_OpenStreetMap_0').style.zIndex = 400;
+        var layer_OpenStreetMap_0 = L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+            pane: 'pane_OpenStreetMap_0',
+            opacity: 1.0,
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+            minZoom: 1,
+            maxZoom: 20,
+            minNativeZoom: 0,
+            maxNativeZoom: 20,
+            subdomains: 'abcd'
+        });
+        layer_OpenStreetMap_0;
+        map.addLayer(layer_OpenStreetMap_0);
+        function pop_supermarketsebaran_supermarket_1(feature, layer) {
+            layer.on({
+                mouseout: function(e) {
+                    if (selectedSupermarketLayer !== e.target) {
+                        resetMarker(e.target);
+                    }
+                },
+                mouseover: highlightFeature,
+            });
+            var name = escapeHtml(getSupermarketName(feature));
+            var address = escapeHtml(getSupermarketAddress(feature));
+            var latitude = escapeHtml(feature.properties['Latitude']);
+            var longitude = escapeHtml(feature.properties['Longitude']);
+            var info = getSupermarketInfo(feature);
+            var sourceLink = info.sourceUrl ? '<a class="secondary" href="' + escapeHtml(info.sourceUrl) + '" target="_blank" rel="noopener noreferrer"><span class="fa fa-external-link-alt" aria-hidden="true"></span>Sumber</a>' : '';
+            var content = '<div class="supermarket-popup">' +
+                '<div class="supermarket-popup__badge"><span class="fas fa-shopping-cart" aria-hidden="true"></span>' + escapeHtml(info.category) + '</div>' +
+                '<h2>' + name + '</h2>' +
+                '<p>' + address + '</p>' +
+                '<p class="supermarket-popup__description">' + escapeHtml(info.description) + '</p>' +
+                '<div class="supermarket-popup__grid">' +
+                    '<div class="supermarket-popup__meta"><span>Layanan</span><strong>' + escapeHtml(info.service) + '</strong></div>' +
+                    '<div class="supermarket-popup__meta"><span>Area</span><strong>Pekanbaru, Riau</strong></div>' +
+                '</div>' +
+                '<div class="coords">Lat: ' + latitude + '<br>Lng: ' + longitude + '</div>' +
+                '<div class="supermarket-popup__actions">' +
+                    '<a href="' + escapeHtml(buildGoogleMapsUrl(feature)) + '" target="_blank" rel="noopener noreferrer"><span class="fas fa-map-marker" aria-hidden="true"></span>Google Maps</a>' +
+                    sourceLink +
+                '</div>' +
+                '<div class="supermarket-popup__source">Informasi disusun dari data koordinat lokal dan sumber web publik bila tersedia.</div>' +
+            '</div>';
+			layer.on('popupopen', function(e) {
+				addClassToPopupIfMedia(content, e.popup);
+			});
+			layer.bindPopup(content, { maxHeight: 400, closeButton: true });
+        }
+
+        function style_supermarketsebaran_supermarket_1_0(feature) {
+            switch(String(feature.properties['Nama'])) {
+                case '212 Mart Subrantas':
+                    return {
+                pane: 'pane_supermarketsebaran_supermarket_1',
+                radius: 4.0,
+                opacity: 1,
+                color: 'rgba(35,35,35,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(31,138,239,1.0)',
+                interactive: true,
+            }
+                    break;
+                case '545 Mart':
+                    return {
+                pane: 'pane_supermarketsebaran_supermarket_1',
+                radius: 4.0,
+                opacity: 1,
+                color: 'rgba(35,35,35,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(107,237,200,1.0)',
+                interactive: true,
+            }
+                    break;
+                case '999 Arengka':
+                    return {
+                pane: 'pane_supermarketsebaran_supermarket_1',
+                radius: 4.0,
+                opacity: 1,
+                color: 'rgba(35,35,35,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(211,62,12,1.0)',
+                interactive: true,
+            }
+                    break;
+                case 'Abbas Jaya':
+                    return {
+                pane: 'pane_supermarketsebaran_supermarket_1',
+                radius: 4.0,
+                opacity: 1,
+                color: 'rgba(35,35,35,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(61,195,225,1.0)',
+                interactive: true,
+            }
+                    break;
+                case 'Big Mart':
+                    return {
+                pane: 'pane_supermarketsebaran_supermarket_1',
+                radius: 4.0,
+                opacity: 1,
+                color: 'rgba(35,35,35,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(66,206,27,1.0)',
+                interactive: true,
+            }
+                    break;
+                case 'Budiman Swalayan Arifin Ahmad':
+                    return {
+                pane: 'pane_supermarketsebaran_supermarket_1',
+                radius: 4.0,
+                opacity: 1,
+                color: 'rgba(35,35,35,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(130,231,141,1.0)',
+                interactive: true,
+            }
+                    break;
+                case 'Cahaya Mart':
+                    return {
+                pane: 'pane_supermarketsebaran_supermarket_1',
+                radius: 4.0,
+                opacity: 1,
+                color: 'rgba(35,35,35,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(223,13,122,1.0)',
+                interactive: true,
+            }
+                    break;
+                case 'City Mart':
+                    return {
+                pane: 'pane_supermarketsebaran_supermarket_1',
+                radius: 4.0,
+                opacity: 1,
+                color: 'rgba(35,35,35,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(173,17,234,1.0)',
+                interactive: true,
+            }
+                    break;
+                case 'Galaxy Swalayan':
+                    return {
+                pane: 'pane_supermarketsebaran_supermarket_1',
+                radius: 4.0,
+                opacity: 1,
+                color: 'rgba(35,35,35,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(58,41,203,1.0)',
+                interactive: true,
+            }
+                    break;
+                case 'Golden Mart':
+                    return {
+                pane: 'pane_supermarketsebaran_supermarket_1',
+                radius: 4.0,
+                opacity: 1,
+                color: 'rgba(35,35,35,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(12,82,203,1.0)',
+                interactive: true,
+            }
+                    break;
+                case 'Green Mart':
+                    return {
+                pane: 'pane_supermarketsebaran_supermarket_1',
+                radius: 4.0,
+                opacity: 1,
+                color: 'rgba(35,35,35,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(207,14,204,1.0)',
+                interactive: true,
+            }
+                    break;
+                case 'Hypermart Ciputra Pekanbaru':
+                    return {
+                pane: 'pane_supermarketsebaran_supermarket_1',
+                radius: 4.0,
+                opacity: 1,
+                color: 'rgba(35,35,35,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(236,238,89,1.0)',
+                interactive: true,
+            }
+                    break;
+                case 'Iin Swalayan':
+                    return {
+                pane: 'pane_supermarketsebaran_supermarket_1',
+                radius: 4.0,
+                opacity: 1,
+                color: 'rgba(35,35,35,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(158,217,124,1.0)',
+                interactive: true,
+            }
+                    break;
+                case 'Iin Swalayan Durian':
+                    return {
+                pane: 'pane_supermarketsebaran_supermarket_1',
+                radius: 4.0,
+                opacity: 1,
+                color: 'rgba(35,35,35,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(206,112,220,1.0)',
+                interactive: true,
+            }
+                    break;
+                case 'Indragiri Mart 03':
+                    return {
+                pane: 'pane_supermarketsebaran_supermarket_1',
+                radius: 4.0,
+                opacity: 1,
+                color: 'rgba(35,35,35,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(203,80,182,1.0)',
+                interactive: true,
+            }
+                    break;
+                case 'Jumbo Mart Delima':
+                    return {
+                pane: 'pane_supermarketsebaran_supermarket_1',
+                radius: 4.0,
+                opacity: 1,
+                color: 'rgba(35,35,35,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(191,219,131,1.0)',
+                interactive: true,
+            }
+                    break;
+                case 'Jumbo Mart Melati Indah':
+                    return {
+                pane: 'pane_supermarketsebaran_supermarket_1',
+                radius: 4.0,
+                opacity: 1,
+                color: 'rgba(35,35,35,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(120,225,180,1.0)',
+                interactive: true,
+            }
+                    break;
+                case 'Lotte Grosir Pekanbaru':
+                    return {
+                pane: 'pane_supermarketsebaran_supermarket_1',
+                radius: 4.0,
+                opacity: 1,
+                color: 'rgba(35,35,35,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(26,224,79,1.0)',
+                interactive: true,
+            }
+                    break;
+                case 'Makro Mart':
+                    return {
+                pane: 'pane_supermarketsebaran_supermarket_1',
+                radius: 4.0,
+                opacity: 1,
+                color: 'rgba(35,35,35,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(208,153,85,1.0)',
+                interactive: true,
+            }
+                    break;
+                case 'Mamamia':
+                    return {
+                pane: 'pane_supermarketsebaran_supermarket_1',
+                radius: 4.0,
+                opacity: 1,
+                color: 'rgba(35,35,35,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(83,36,227,1.0)',
+                interactive: true,
+            }
+                    break;
+                case 'Mamamia Swalayan':
+                    return {
+                pane: 'pane_supermarketsebaran_supermarket_1',
+                radius: 4.0,
+                opacity: 1,
+                color: 'rgba(35,35,35,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(208,76,104,1.0)',
+                interactive: true,
+            }
+                    break;
+                case 'Mulia Mart':
+                    return {
+                pane: 'pane_supermarketsebaran_supermarket_1',
+                radius: 4.0,
+                opacity: 1,
+                color: 'rgba(35,35,35,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(215,14,148,1.0)',
+                interactive: true,
+            }
+                    break;
+                case 'Naila Mart':
+                    return {
+                pane: 'pane_supermarketsebaran_supermarket_1',
+                radius: 4.0,
+                opacity: 1,
+                color: 'rgba(35,35,35,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(216,67,77,1.0)',
+                interactive: true,
+            }
+                    break;
+                case 'New Planet Swalayan Garuda Sakti':
+                    return {
+                pane: 'pane_supermarketsebaran_supermarket_1',
+                radius: 4.0,
+                opacity: 1,
+                color: 'rgba(35,35,35,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(181,200,85,1.0)',
+                interactive: true,
+            }
+                    break;
+                case 'Pesona Swalayan':
+                    return {
+                pane: 'pane_supermarketsebaran_supermarket_1',
+                radius: 4.0,
+                opacity: 1,
+                color: 'rgba(35,35,35,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(107,206,193,1.0)',
+                interactive: true,
+            }
+                    break;
+                case 'Planet Midi Swalayan':
+                    return {
+                pane: 'pane_supermarketsebaran_supermarket_1',
+                radius: 4.0,
+                opacity: 1,
+                color: 'rgba(35,35,35,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(137,206,63,1.0)',
+                interactive: true,
+            }
+                    break;
+                case 'Planet Swalayan Cipta Karya':
+                    return {
+                pane: 'pane_supermarketsebaran_supermarket_1',
+                radius: 4.0,
+                opacity: 1,
+                color: 'rgba(35,35,35,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(201,22,88,1.0)',
+                interactive: true,
+            }
+                    break;
+                case 'Planet Swalayan Inpres':
+                    return {
+                pane: 'pane_supermarketsebaran_supermarket_1',
+                radius: 4.0,
+                opacity: 1,
+                color: 'rgba(35,35,35,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(137,80,222,1.0)',
+                interactive: true,
+            }
+                    break;
+                case 'Planet Swalayan Kualu':
+                    return {
+                pane: 'pane_supermarketsebaran_supermarket_1',
+                radius: 4.0,
+                opacity: 1,
+                color: 'rgba(35,35,35,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(61,68,209,1.0)',
+                interactive: true,
+            }
+                    break;
+                case 'Prima Swalayan':
+                    return {
+                pane: 'pane_supermarketsebaran_supermarket_1',
+                radius: 4.0,
+                opacity: 1,
+                color: 'rgba(35,35,35,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(79,219,72,1.0)',
+                interactive: true,
+            }
+                    break;
+                case 'Rafhamaret':
+                    return {
+                pane: 'pane_supermarketsebaran_supermarket_1',
+                radius: 4.0,
+                opacity: 1,
+                color: 'rgba(35,35,35,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(59,89,207,1.0)',
+                interactive: true,
+            }
+                    break;
+                case 'Swalayan 999':
+                    return {
+                pane: 'pane_supermarketsebaran_supermarket_1',
+                radius: 4.0,
+                opacity: 1,
+                color: 'rgba(35,35,35,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(231,103,89,1.0)',
+                interactive: true,
+            }
+                    break;
+                case 'Swalayan D\'Seven':
+                    return {
+                pane: 'pane_supermarketsebaran_supermarket_1',
+                radius: 4.0,
+                opacity: 1,
+                color: 'rgba(35,35,35,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(209,154,16,1.0)',
+                interactive: true,
+            }
+                    break;
+                case 'Swalayan Mamma Mia':
+                    return {
+                pane: 'pane_supermarketsebaran_supermarket_1',
+                radius: 4.0,
+                opacity: 1,
+                color: 'rgba(35,35,35,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(56,168,224,1.0)',
+                interactive: true,
+            }
+                    break;
+                case 'Tek Ros Swalayan':
+                    return {
+                pane: 'pane_supermarketsebaran_supermarket_1',
+                radius: 4.0,
+                opacity: 1,
+                color: 'rgba(35,35,35,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(226,211,115,1.0)',
+                interactive: true,
+            }
+                    break;
+                case 'Toko Bintang Abadi':
+                    return {
+                pane: 'pane_supermarketsebaran_supermarket_1',
+                radius: 4.0,
+                opacity: 1,
+                color: 'rgba(35,35,35,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(176,116,222,1.0)',
+                interactive: true,
+            }
+                    break;
+                case 'Transmart Pekanbaru':
+                    return {
+                pane: 'pane_supermarketsebaran_supermarket_1',
+                radius: 4.0,
+                opacity: 1,
+                color: 'rgba(35,35,35,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(204,89,13,1.0)',
+                interactive: true,
+            }
+                    break;
+                case 'Warungsegar':
+                    return {
+                pane: 'pane_supermarketsebaran_supermarket_1',
+                radius: 4.0,
+                opacity: 1,
+                color: 'rgba(35,35,35,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(91,236,151,1.0)',
+                interactive: true,
+            }
+                    break;
+                default:
+                    return {
+                pane: 'pane_supermarketsebaran_supermarket_1',
+                radius: 4.0,
+                opacity: 1,
+                color: 'rgba(35,35,35,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(112,212,215,1.0)',
+                interactive: true,
+            }
+                    break;
+            }
+        }
+        map.createPane('pane_supermarketsebaran_supermarket_1');
+        map.getPane('pane_supermarketsebaran_supermarket_1').style.zIndex = 401;
+        map.getPane('pane_supermarketsebaran_supermarket_1').style['mix-blend-mode'] = 'normal';
+        var layer_supermarketsebaran_supermarket_1 = new L.geoJson(json_supermarketsebaran_supermarket_1, {
+            attribution: '',
+            interactive: true,
+            dataVar: 'json_supermarketsebaran_supermarket_1',
+            layerName: 'layer_supermarketsebaran_supermarket_1',
+            pane: 'pane_supermarketsebaran_supermarket_1',
+            onEachFeature: pop_supermarketsebaran_supermarket_1,
+            pointToLayer: function (feature, latlng) {
+                var context = {
+                    feature: feature,
+                    variables: {}
+                };
+                return L.marker(latlng, {
+                    icon: createSupermarketIcon(),
+                    pane: 'pane_supermarketsebaran_supermarket_1',
+                    riseOnHover: true,
+                    title: getSupermarketName(feature)
+                });
+            },
+        });
+        bounds_group.addLayer(layer_supermarketsebaran_supermarket_1);
+        map.addLayer(layer_supermarketsebaran_supermarket_1);
+        var supermarketLayers = [];
+        var selectedSupermarketLayer = null;
+        var focusPopupTimer = null;
+        var searchInput = document.getElementById('supermarketSearch');
+        var searchResults = document.getElementById('searchResults');
+        var showAllButton = document.getElementById('showAllPoints');
+        var clearSearchButton = document.getElementById('clearSearch');
+
+        function normalizeSearchText(value) {
+            return String(value || '').toLowerCase().trim();
+        }
+
+        function getLayerSearchText(layer) {
+            return normalizeSearchText(
+                getSupermarketName(layer.feature) + ' ' +
+                getSupermarketAddress(layer.feature) + ' ' +
+                layer.feature.properties['Latitude'] + ' ' +
+                layer.feature.properties['Longitude']
+            );
+        }
+
+        function selectSupermarketLayer(layer) {
+            if (selectedSupermarketLayer && selectedSupermarketLayer !== layer) {
+                resetMarker(selectedSupermarketLayer);
+            }
+            selectedSupermarketLayer = layer;
+            focusMarker(layer);
+            map.closePopup();
+            if (focusPopupTimer) {
+                clearTimeout(focusPopupTimer);
+            }
+
+            var targetZoom = Math.max(map.getZoom(), 16);
+            map.flyTo(layer.getLatLng(), targetZoom, {
+                animate: true,
+                duration: 0.65
+            });
+            focusPopupTimer = setTimeout(function() {
+                layer.openPopup();
+            }, 680);
+        }
+
+        function renderSearchResults(query) {
+            var normalizedQuery = normalizeSearchText(query);
+            var results = supermarketLayers.filter(function(layer) {
+                return !normalizedQuery || getLayerSearchText(layer).indexOf(normalizedQuery) !== -1;
+            });
+
+            searchResults.innerHTML = '';
+            if (!results.length) {
+                searchResults.innerHTML = '<div class="search-empty">Lokasi tidak ditemukan.</div>';
+                return;
+            }
+
+            results.slice(0, 12).forEach(function(layer) {
+                var item = document.createElement('button');
+                item.type = 'button';
+                item.className = 'search-result';
+                item.innerHTML = '<strong>' + escapeHtml(getSupermarketName(layer.feature)) + '</strong>' +
+                    '<span>' + escapeHtml(getSupermarketAddress(layer.feature)) + '</span>' +
+                    '<small><span class="fa fa-map-marker" aria-hidden="true"></span>Lihat titik</small>';
+                item.addEventListener('click', function() {
+                    searchInput.value = getSupermarketName(layer.feature);
+                    renderSearchResults(searchInput.value);
+                    selectSupermarketLayer(layer);
+                });
+                searchResults.appendChild(item);
+            });
+        }
+        setBounds();
+        var i = 0;
+        layer_supermarketsebaran_supermarket_1.eachLayer(function(layer) {
+            var context = {
+                feature: layer.feature,
+                variables: {}
+            };
+            supermarketLayers.push(layer);
+            layer.bindTooltip((layer.feature.properties['Nama'] !== null?String(escapeHtml(layer.feature.properties['Nama'])):''), {
+                permanent: true,
+                direction: 'top',
+                offset: [0, -12],
+                className: 'css_supermarketsebaran_supermarket_1'
+            });
+            layer.on('click', function() {
+                selectSupermarketLayer(layer);
+            });
+            labels.push(layer);
+            totalMarkers += 1;
+              layer.added = true;
+              addLabel(layer, i);
+              i++;
+        });
+        renderSearchResults('');
+        searchInput.addEventListener('input', function(e) {
+            renderSearchResults(e.target.value);
+        });
+        searchInput.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') {
+                var firstResult = searchResults.querySelector('.search-result');
+                if (firstResult) {
+                    firstResult.click();
+                }
+            }
+        });
+        showAllButton.addEventListener('click', function() {
+            if (selectedSupermarketLayer) {
+                resetMarker(selectedSupermarketLayer);
+                selectedSupermarketLayer = null;
+            }
+            map.fitBounds(layer_supermarketsebaran_supermarket_1.getBounds(), { padding: [36, 36] });
+            renderSearchResults(searchInput.value);
+        });
+        clearSearchButton.addEventListener('click', function() {
+            searchInput.value = '';
+            renderSearchResults('');
+            searchInput.focus();
+        });
+        map.fitBounds(layer_supermarketsebaran_supermarket_1.getBounds(), { padding: [36, 36] });
+        resetLabels([layer_supermarketsebaran_supermarket_1]);
+        map.on("zoomend", function(){
+            resetLabels([layer_supermarketsebaran_supermarket_1]);
+        });
+        map.on("layeradd", function(){
+            resetLabels([layer_supermarketsebaran_supermarket_1]);
+        });
+        map.on("layerremove", function(){
+            resetLabels([layer_supermarketsebaran_supermarket_1]);
+        });
+        </script>        
+    </body>
+</html>
